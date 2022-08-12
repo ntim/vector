@@ -20,6 +20,7 @@ use serde_with::serde_as;
 use snafu::Snafu;
 use stream_cancel::{Trigger, Tripwire};
 use tracing::{Instrument, Span};
+use vector_config::configurable_component;
 use vector_core::{
     internal_event::{BytesSent, EventsSent},
     ByteSizeOf,
@@ -57,7 +58,8 @@ enum BuildError {
 
 /// Configuration for the `prometheus_exporter` sink.
 #[serde_as]
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[configurable_component(sink)]
+#[derive(Clone, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct PrometheusExporterConfig {
     /// The default namespace for any metrics sent.
@@ -77,6 +79,7 @@ pub struct PrometheusExporterConfig {
     #[serde(default = "default_address")]
     pub address: SocketAddr,
 
+    #[configurable(derived)]
     pub tls: Option<TlsEnableableConfig>,
 
     /// Default buckets to use for aggregating [distribution][dist_metric_docs] metrics into histograms.
@@ -121,6 +124,7 @@ pub struct PrometheusExporterConfig {
     #[serde(default)]
     pub suppress_timestamp: bool,
 
+    #[configurable(derived)]
     #[serde(
         default,
         deserialize_with = "crate::serde::bool_or_struct",
@@ -207,8 +211,8 @@ impl SinkConfig for PrometheusExporterConfig {
         vec![Resource::tcp(self.address)]
     }
 
-    fn acknowledgements(&self) -> Option<&AcknowledgementsConfig> {
-        Some(&self.acknowledgements)
+    fn acknowledgements(&self) -> &AcknowledgementsConfig {
+        &self.acknowledgements
     }
 }
 
@@ -239,7 +243,7 @@ impl SinkConfig for PrometheusCompatConfig {
         self.config.resources()
     }
 
-    fn acknowledgements(&self) -> Option<&AcknowledgementsConfig> {
+    fn acknowledgements(&self) -> &AcknowledgementsConfig {
         self.config.acknowledgements()
     }
 }
